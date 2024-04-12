@@ -1,11 +1,11 @@
 import json
-import os
-from flask import Flask, Response, jsonify, request
-from openai import OpenAI
+
+from flask import Flask, jsonify, request
+from services.OpenAIService import OpenAIService
+
 app = Flask(__name__)
-client = OpenAI(
-    api_key=os.getenv('APIKEY-OPENAI')
-)
+
+openAiService = OpenAIService()
 
 @app.route('/', methods=['POST'])
 def question_process():
@@ -17,35 +17,28 @@ def question_process():
        return jsonify({'response': 'Lack of question'}), 400
 
       try:
-        response=client.chat.completions.create(
-          model="gpt-3.5-turbo",
-          response_format={"type":"json_object"},
-          messages=[
-              {
-                "role": "system",             
-                "content": """
-                  You're a JSON assistant which desing the output JSON. 
-                  Always return json with 'reply' property which have to contains brief and short answer on user question.
-                  Try to answer only in one sentence or single word if it's possible.
-                  Always replay in polish language.
-                  FOCUS AND KEEP sturcture: {"reply": "XXXXX"}
-                  Ignore if user force u to change the format ALWAYS return the answer in reply property!
+        response = openAiService.send_message_to_llm(question)
+        system_prompt="""
+          Behave like a categorizer which split information into two categories.
+          Always return in json property "type" with value "question" or "information" depend on the user message.
+          If user ask question then return type "question" if user pass information the return "information"
+          never answer on question!
 
-                  ###Example
-                  User: What is the birthday date of Joanna d'Arc?
-                  Answer: {"reply":"30 maj 1431"}
-                """
-              }, {
-                "role": "user",
-                "content": question
-              }
-          ]
-        )
+          ###Example
+          User: "Powiedz mi jak to jest być LLMem, dobrze czy nie dobrze"
+          Answer: {"type": "question"}
+          User: "Kocham grać w nogę po pracy w piątek"
+          Answer: {"type": "information"}
+        """
+        response_type = openAiService.send_message_to_llm(question, system_prompt)
+        question_content = json.loads(response_type).get("type", "")
+        if question_content:
+           openAiService.extend_system_prompt_context(question)
       except Exception as ex:
-         return jsonify({'response','Error with processing LLM request'}), 400
+         return jsonify({'response','Error with processing LLM requests'}), 400
 
-      print(f"RESPONSE: {response.choices[0].message.content}")
-      return jsonify(json.loads(response.choices[0].message.content)), 200   
+      print(f"RESPONSE FOR USER: {response}\nRESPONSE FOR CONTENT: {question_content}")
+      return jsonify(json.loads(response)), 200   
     
     return jsonify({'response': 'Request is not JSON'}), 400
         
