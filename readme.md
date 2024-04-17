@@ -11,3 +11,5 @@ it will create for u on pointed link your temp VPS to test. If I think correctly
 Useful link how to use ngrok:
 https://ngrok.com/docs/getting-started/?os=windows
 https://dashboard.ngrok.com/get-started/setup/windows
+
+Second endpoint /google allow to solve goole task it requres to set APIKEY_SERPAPI key to get access to serapi.

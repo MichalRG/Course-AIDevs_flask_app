@@ -27,7 +27,7 @@ class OpenAIService:
                   ###Context
                 """
 
-  def send_message_to_llm(self, user_prompt, system_prompt = None):
+  def send_message_to_llm_with_return_json_object(self, user_prompt, system_prompt = None):
     response = self.client.chat.completions.create(
           model="gpt-3.5-turbo",
           response_format={"type":"json_object"},
@@ -42,6 +42,24 @@ class OpenAIService:
           ]
         )
     
+    
+    
+    return response.choices[0].message.content
+  
+  def send_message_to_llm(self, user_prompt, system_prompt = None):
+    response = self.client.chat.completions.create(
+          model="gpt-3.5-turbo",
+          messages=[
+              {
+                "role": "system",             
+                "content": system_prompt or self.system_prompt
+              }, {
+                "role": "user",
+                "content": user_prompt
+              }
+          ]
+        )
+        
     return response.choices[0].message.content
   
   def extend_system_prompt_context(self, new_context):
